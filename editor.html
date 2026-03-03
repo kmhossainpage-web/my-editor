@@ -2,71 +2,152 @@
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
-    <title>Smart Product Manager (No Console)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Inventory & Blogger Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; background: #f4f7f6; padding: 20px; }
-        .box { max-width: 500px; margin: auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        input, .editor { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
-        .btn { width: 100%; padding: 12px; background: #059669; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        #status { font-weight: bold; color: #2563eb; margin-bottom: 10px; display: block; }
+        :root { --primary: #2563eb; --success: #059669; --bg: #f8fafc; }
+        body { font-family: 'Hind Siliguri', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
+        .dashboard { max-width: 1000px; margin: auto; background: #fff; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; margin-bottom: 25px; padding-bottom: 10px; }
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        label { display: block; font-weight: 600; margin-bottom: 8px; color: #344767; }
+        input, select, .rich-editor { width: 100%; padding: 12px; border: 1px solid #d2d6da; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
+        .rich-editor { min-height: 200px; background: #fafafa; outline: none; border: 1px solid #ccc; padding: 15px; }
+        .img-preview-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 10px; }
+        .img-box { border: 2px dashed #ddd; border-radius: 10px; height: 80px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
+        .img-box img { width: 100%; height: 100%; object-fit: cover; }
+        .btn-group { margin-top: 30px; display: flex; gap: 10px; }
+        .btn { flex: 1; padding: 15px; border: none; border-radius: 10px; cursor: pointer; font-weight: 700; font-size: 16px; transition: 0.3s; }
+        .btn-post { background: var(--primary); color: white; }
+        .btn-post:hover { background: #1e40af; }
+        .status-bar { padding: 10px; border-radius: 5px; margin-bottom: 20px; font-weight: 600; text-align: center; display: none; }
     </style>
 </head>
 <body>
 
-<div class="box">
-    <h2>নতুন প্রোডাক্ট যোগ করুন</h2>
-    <span id="status">স্ট্যাটাস: রেডি</span>
-    
-    <input type="text" id="title" placeholder="প্রোডাক্টের নাম">
-    <input type="number" id="price" placeholder="দাম (৳)">
-    
-    <label>ছবি আপলোড:</label>
-    <input type="file" onchange="uploadImg(this)">
-    <input type="hidden" id="mainImg">
+<div class="dashboard">
+    <div class="header">
+        <h2 style="color: var(--primary); margin: 0;">🛒 Pro Product Manager</h2>
+        <div id="loader" style="display:none; color: var(--primary);">⚙️ প্রসেসিং হচ্ছে...</div>
+    </div>
 
-    <div class="editor" id="desc" contenteditable="true" style="min-height: 100px; border: 1px solid #ccc;" placeholder="পণ্যের বর্ণনা..."></div>
-    
-    <button class="btn" onclick="sendToAppScript()">পাবলিশ করুন</button>
+    <div id="msg" class="status-bar"></div>
+
+    <div class="grid">
+        <div>
+            <label>পণ্যের নাম (Title)</label>
+            <input type="text" id="title" placeholder="উদা: Premium Quality T-Shirt">
+        </div>
+        <div>
+            <label>ক্যাটাগরি (Category/Label)</label>
+            <select id="label">
+                <option value="Gadgets">Gadgets</option>
+                <option value="Fashion">Fashion</option>
+                <option value="Health">Health</option>
+                <option value="Electronics">Electronics</option>
+            </select>
+        </div>
+
+        <div>
+            <label>মেইন প্রাইস (৳)</label>
+            <input type="number" id="newP" placeholder="৳৭৫০">
+        </div>
+        <div>
+            <label>পুরোনো প্রাইস (৳)</label>
+            <input type="number" id="oldP" placeholder="৳৯৫০">
+        </div>
+
+        <div>
+            <label>স্টক অবস্থা</label>
+            <select id="stock">
+                <option value="In Stock">In Stock (স্টকে আছে)</option>
+                <option value="Out of Stock">Out of Stock (স্টক শেষ)</option>
+            </select>
+        </div>
+        <div>
+            <label>ইউটিউব ভিডিও আইডি (যদি থাকে)</label>
+            <input type="text" id="ytId" placeholder="উদা: dQw4w9WgXcQ">
+        </div>
+    </div>
+
+    <div style="margin-top: 20px;">
+        <label>পণ্যের ছবি (প্রথমটি মেইন ছবি, বাকি ৪টি গ্যালারি)</label>
+        <div class="img-preview-grid">
+            <div class="img-box" onclick="document.getElementById('f0').click()"><input type="file" id="f0" hidden onchange="up(this, 0)"><span id="s0">+</span><img id="i0" hidden></div>
+            <div class="img-box" onclick="document.getElementById('f1').click()"><input type="file" id="f1" hidden onchange="up(this, 1)"><span id="s1">+</span><img id="i1" hidden></div>
+            <div class="img-box" onclick="document.getElementById('f2').click()"><input type="file" id="f2" hidden onchange="up(this, 2)"><span id="s2">+</span><img id="i2" hidden></div>
+            <div class="img-box" onclick="document.getElementById('f3').click()"><input type="file" id="f3" hidden onchange="up(this, 3)"><span id="s3">+</span><img id="i3" hidden></div>
+            <div class="img-box" onclick="document.getElementById('f4').click()"><input type="file" id="f4" hidden onchange="up(this, 4)"><span id="s4">+</span><img id="i4" hidden></div>
+        </div>
+    </div>
+
+    <div style="margin-top: 20px;">
+        <label>পণ্যের বিস্তারিত বর্ণনা</label>
+        <div class="rich-editor" id="desc" contenteditable="true" placeholder="পণ্যের গুণাবলী এখানে লিখুন..."></div>
+    </div>
+
+    <div class="btn-group">
+        <button class="btn btn-post" onclick="submitData()">🚀 পাবলিশ এবং শিট এন্ট্রি</button>
+    </div>
 </div>
 
 <script>
-    // আপনার Apps Script-এর URL এখানে দিন
-    const SCRIPT_URL = 'আপনার_কপি_করা_লিঙ্ক_এখানে_দিন';
     const IMGBB_KEY = '546dc91089a1748769faf7c52864a57d';
+    const SCRIPT_URL = 'আপনার_APPS_SCRIPT_URL_এখানে_দিন'; // এখান থেকে কনসোল ছাড়া কাজ হবে
+    let imgUrls = ["", "", "", "", ""];
 
-    async function uploadImg(el) {
-        document.getElementById('status').innerText = "⏳ ছবি আপলোড হচ্ছে...";
+    // ছবি আপলোড ফাংশন
+    async function up(input, index) {
+        if(!input.files[0]) return;
+        document.getElementById('s'+index).innerText = "⏳";
+        
         const form = new FormData();
-        form.append('image', el.files[0]);
+        form.append('image', input.files[0]);
+        
         const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: 'POST', body: form });
         const data = await res.json();
+        
         if(data.success) {
-            document.getElementById('mainImg').value = data.data.url;
-            document.getElementById('status').innerText = "✅ ছবি আপলোড সফল!";
+            imgUrls[index] = data.data.url;
+            document.getElementById('s'+index).hidden = true;
+            const img = document.getElementById('i'+index);
+            img.src = data.data.url;
+            img.hidden = false;
         }
     }
 
-    async function sendToAppScript() {
+    // ডাটা সাবমিট ফাংশন
+    function submitData() {
         const title = document.getElementById('title').value;
-        const price = document.getElementById('price').value;
-        const img = document.getElementById('mainImg').value;
-        const desc = document.getElementById('desc').innerHTML;
+        if(!title || !imgUrls[0]) return alert("টাইটেল এবং অন্তত একটি ছবি দিন!");
 
-        if(!title || !img) return alert("তথ্য অসম্পূর্ণ!");
-
-        document.getElementById('status').innerText = "🚀 ব্লগে পাঠানো হচ্ছে...";
-
-        const content = `<div style="text-align:center;"><img src="${img}" style="max-width:100%"><br><h2>${title}</h2><p>দাম: ${price}৳</p><div>${desc}</div><button>অর্ডার করুন</button></div>`;
+        document.getElementById('loader').style.display = "block";
+        
+        const payload = {
+            title: title,
+            price: document.getElementById('newP').value,
+            oldPrice: document.getElementById('oldP').value,
+            label: document.getElementById('label').value,
+            stock: document.getElementById('stock').value,
+            yt: document.getElementById('ytId').value,
+            mainImg: imgUrls[0],
+            gallery: imgUrls.slice(1).filter(u => u !== ""),
+            desc: document.getElementById('desc').innerHTML
+        };
 
         fetch(SCRIPT_URL, {
             method: 'POST',
-            mode: 'no-cors', // এটি গুরুত্বপূর্ণ
-            body: JSON.stringify({ title: title, price: price, content: content })
+            mode: 'no-cors',
+            body: JSON.stringify(payload)
         }).then(() => {
-            document.getElementById('status').innerText = "🎯 সফলভাবে ব্লগে পোস্ট এবং শিটে এন্ট্রি হয়েছে!";
-            alert("কাজ শেষ!");
-        }).catch(err => {
-            alert("কিছু একটা ভুল হয়েছে!");
+            document.getElementById('loader').style.display = "none";
+            const msg = document.getElementById('msg');
+            msg.innerText = "✅ সফলভাবে ব্লগে পোস্ট এবং শিটে জমা হয়েছে!";
+            msg.style.display = "block";
+            msg.style.background = "#ecfdf5";
+            msg.style.color = "#059669";
+            alert("অভিনন্দন! আপনার প্রোডাক্টটি এখন লাইভ।");
         });
     }
 </script>
