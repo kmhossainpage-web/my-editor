@@ -14,6 +14,7 @@
         .btn:hover { background: #1d4ed8; }
         label { font-weight: 600; color: #374151; display: block; margin-top: 10px; }
         .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .upload-status { font-weight: bold; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -35,7 +36,7 @@
     
     <label>প্রধান ছবি (ImgBB অটো আপলোড)</label>
     <input type="file" onchange="uploadImg(this, 'mainUrl')">
-    <input type="text" id="mainUrl" placeholder="ছবির লিঙ্ক এখানে আসবে..." readonly>
+    <input type="text" id="mainUrl" class="upload-status" placeholder="ছবির লিঙ্ক এখানে আসবে..." readonly>
 
     <label>গ্যালারি ছবি (সর্বোচ্চ ৪টি)</label>
     <div class="grid">
@@ -62,10 +63,8 @@
         window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${window.location.href.split('#')[0]}&response_type=token&scope=https://www.googleapis.com/auth/blogger`;
     }
 
-    // পেজ লোড হওয়ার সময় ব্লগ আইডি সেট করা এবং টোকেন চেক করা
     window.onload = () => { 
         document.getElementById('blogId').value = MY_BLOG_ID;
-        
         if(window.location.hash) {
             token = window.location.hash.split('&')[0].split('=')[1];
             if(token) {
@@ -76,9 +75,15 @@
         }
     };
 
+    // স্মার্ট ইমেজ আপলোড ফাংশন (কোনো পপ-আপ ছাড়া)
     async function uploadImg(input, targetId) {
         if(!input.files[0]) return;
-        const status = alert("ছবি আপলোড হচ্ছে, দয়া করে অপেক্ষা করুন...");
+        
+        const targetField = document.getElementById(targetId);
+        const originalPlaceholder = targetField.placeholder;
+        targetField.value = "আপলোড হচ্ছে... একটু অপেক্ষা করুন";
+        targetField.style.color = "#2563eb";
+
         const formData = new FormData();
         formData.append('image', input.files[0]);
         
@@ -86,38 +91,32 @@
             const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: 'POST', body: formData });
             const data = await res.json();
             if(data.success) {
-                document.getElementById(targetId).value = data.data.url;
-                alert("ছবি আপলোড সফল হয়েছে!");
+                targetField.value = data.data.url;
+                targetField.style.color = "#10b981";
             }
         } catch (err) {
-            alert("আপলোড ব্যর্থ হয়েছে! আবার চেষ্টা করুন।");
+            targetField.value = "আপলোড ব্যর্থ!";
+            targetField.style.color = "#ef4444";
         }
     }
 
     async function publishPost() {
-        if(!token) {
-            alert("আগে গুগল কানেক্ট করুন!");
-            return;
-        }
+        if(!token) { alert("আগে গুগল কানেক্ট করুন!"); return; }
 
         const title = document.getElementById('title').value;
         const mainImg = document.getElementById('mainUrl').value;
-        const oldPrice = document.getElementById('oldP').value;
         const newPrice = document.getElementById('newP').value;
+        const oldPrice = document.getElementById('oldP').value;
         const description = document.getElementById('desc').innerHTML;
 
-        if(!title || !mainImg || !newPrice) {
-            alert("দয়া করে টাইটেল, ছবি এবং দাম লিখুন!");
-            return;
-        }
+        if(!title || !mainImg || !newPrice) { alert("টাইটেল, ছবি এবং দাম দিন!"); return; }
 
         let gal = '';
         for(let i=1; i<=4; i++) {
             let l = document.getElementById('g'+i).value;
-            if(l) gal += `<img src="${l}" style="width:70px; height:70px; object-fit:cover; margin:5px; border-radius:8px; border:1px solid #ddd;">`;
+            if(l && l.includes('http')) gal += `<img src="${l}" style="width:70px; height:70px; object-fit:cover; margin:5px; border-radius:8px; border:1px solid #ddd;">`;
         }
 
-        // ব্লগের জন্য কন্টেন্ট ফরম্যাট
         const content = `
             <div class="product-container" style="max-width:600px; margin:auto; border:1px solid #eee; padding:15px; border-radius:10px;">
                 <img src="${mainImg}" style="width:100%; border-radius:10px;">
@@ -130,22 +129,13 @@
             </div>
         `;
 
-        try {
-            const res = await fetch(`https://www.googleapis.com/blogger/v3/blogs/${MY_BLOG_ID}/posts/`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title: title, content: content })
-            });
-            
-            if(res.ok) {
-                alert("অভিনন্দন! পণ্যটি সফলভাবে ব্লগে পোস্ট হয়েছে।");
-            } else {
-                const errData = await res.json();
-                alert("ভুল হয়েছে: " + errData.error.message);
-            }
-        } catch (err) {
-            alert("সার্ভার এরর! আবার চেষ্টা করুন।");
-        }
+        const res = await fetch(`https://www.googleapis.com/blogger/v3/blogs/${MY_BLOG_ID}/posts/`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: title, content: content })
+        });
+        
+        if(res.ok) { alert("সফলভাবে পোস্ট হয়েছে!"); } else { alert("পোস্ট করা যায়নি।"); }
     }
 </script>
 </body>
