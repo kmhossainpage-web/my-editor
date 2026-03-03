@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <title>Pro Product Manager (ImgBB Auto)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Hind Siliguri', sans-serif; background: #f1f5f9; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 15px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        input, select, .editor { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .editor { min-height: 150px; outline: none; border: 1px solid #ccc; }
+        .btn { padding: 15px; background: #2563eb; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 20px; }
+        .status { font-size: 12px; color: #666; margin-top: 2px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <button onclick="authenticate()" style="background:#ef4444; color:#fff; border:none; padding:10px; border-radius:5px; cursor:pointer;">১. গুগল কানেক্ট করুন</button>
+    <hr>
+    <div class="grid">
+        <div><label>টাইটেল</label><input type="text" id="title"></div>
+        <div><label>ব্লগ আইডি (Blogger)</label><input type="text" id="blogId"></div>
+    </div>
+    <div class="grid">
+        <div><label>রেগুলার প্রাইস</label><input type="number" id="oldP"></div>
+        <div><label>ডিস্কাউন্ট প্রাইস</label><input type="number" id="newP"></div>
+    </div>
+    
+    <label>প্রধান ছবি (ImgBB অটো আপলোড)</label>
+    <input type="file" onchange="uploadImg(this, 'mainUrl')">
+    <input type="text" id="mainUrl" placeholder="লিঙ্ক আসবে..." readonly>
+
+    <label>গ্যালারি ছবি (সর্বোচ্চ ৪টি)</label>
+    <div class="grid">
+        <input type="file" onchange="uploadImg(this, 'g1')">
+        <input type="file" onchange="uploadImg(this, 'g2')">
+        <input type="file" onchange="uploadImg(this, 'g3')">
+        <input type="file" onchange="uploadImg(this, 'g4')">
+    </div>
+    <input type="hidden" id="g1"> <input type="hidden" id="g2"> <input type="hidden" id="g3"> <input type="hidden" id="g4">
+
+    <label>বর্ণনা (Bold/Italic/List)</label>
+    <div class="editor" id="desc" contenteditable="true"></div>
+
+    <button class="btn" onclick="publishPost()">পাবলিশ/আপডেট পোস্ট</button>
+</div>
+
+<script>
+    const IMGBB_KEY = '546dc91089a1748769faf7c52864a57d'; 
+    const CLIENT_ID = '918784071036-u63ihe5ihb5tc81t8ios82mfnk9f4hpa.apps.googleusercontent.com';
+    let token = null;
+
+    function authenticate() {
+        window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${window.location.href.split('#')[0]}&response_type=token&scope=https://www.googleapis.com/auth/blogger`;
+    }
+
+    window.onload = () => { if(window.location.hash) token = window.location.hash.split('&')[0].split('=')[1]; };
+
+    async function uploadImg(input, targetId) {
+        const formData = new FormData();
+        formData.append('image', input.files[0]);
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: 'POST', body: formData });
+        const data = await res.json();
+        if(data.success) document.getElementById(targetId).value = data.data.url;
+        alert("আপলোড সফল!");
+    }
+
+    async function publishPost() {
+        const blogId = document.getElementById('blogId').value;
+        const mainImg = document.getElementById('mainUrl').value;
+        let gal = '';
+        for(let i=1; i<=4; i++) {
+            let l = document.getElementById('g'+i).value;
+            if(l) gal += `<img src="${l}" style="width:70px; margin:5px; border-radius:8px;">`;
+        }
+
+        const content = `<div class="p-card"><img src="${mainImg}" style="width:100%"><div class="gal">${gal}</div><h2>${document.getElementById('title').value}</h2><p>${document.getElementById('newP').value}৳</p><div>${document.getElementById('desc').innerHTML}</div><button onclick="openForm()">অর্ডার করুন</button></div>`;
+
+        const res = await fetch(`https://www.googleapis.com/blogger/v3/blogs/${blogId}/posts/`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: document.getElementById('title').value, content: content })
+        });
+        if(res.ok) alert("সরাসরি ব্লগে পোস্ট হয়েছে!");
+    }
+</script>
+</body>
+</html>
