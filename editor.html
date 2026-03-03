@@ -2,160 +2,72 @@
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
-    <title>Pro Product Manager (Fixed Auth)</title>
-    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap" rel="stylesheet">
+    <title>Smart Product Manager (No Console)</title>
     <style>
-        body { font-family: 'Hind Siliguri', sans-serif; background: #f1f5f9; padding: 20px; }
-        .container { max-width: 900px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 15px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        input, select, .editor { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        .editor { min-height: 150px; outline: none; border: 1px solid #ccc; background: #fafafa; }
-        .btn { padding: 15px; background: #2563eb; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 20px; }
-        .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .status-box { font-weight: bold; background: #f8fafc; }
+        body { font-family: sans-serif; background: #f4f7f6; padding: 20px; }
+        .box { max-width: 500px; margin: auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        input, .editor { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        .btn { width: 100%; padding: 12px; background: #059669; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        #status { font-weight: bold; color: #2563eb; margin-bottom: 10px; display: block; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header-flex">
-        <h2 style="margin:0;">পণ্য আপলোড এডিটর</h2>
-        <button id="authBtn" onclick="authenticate()" style="background:#ef4444; color:#fff; border:none; padding:10px 20px; border-radius:5px; cursor:pointer; font-weight:bold;">১. গুগল কানেক্ট করুন</button>
-    </div>
-    <hr>
+<div class="box">
+    <h2>নতুন প্রোডাক্ট যোগ করুন</h2>
+    <span id="status">স্ট্যাটাস: রেডি</span>
     
-    <div class="grid">
-        <div><label>টাইটেল</label><input type="text" id="title" placeholder="পণ্যের নাম"></div>
-        <div><label>ব্লগ আইডি (Blogger)</label><input type="text" id="blogId" class="status-box" readonly></div>
-    </div>
-
-    <div class="grid">
-        <div><label>রেগুলার প্রাইস</label><input type="number" id="oldP" placeholder="৳"></div>
-        <div><label>ডিস্কাউন্ট প্রাইস</label><input type="number" id="newP" placeholder="৳"></div>
-    </div>
+    <input type="text" id="title" placeholder="প্রোডাক্টের নাম">
+    <input type="number" id="price" placeholder="দাম (৳)">
     
-    <label>প্রধান ছবি (ImgBB অটো আপলোড)</label>
-    <input type="file" onchange="uploadImg(this, 'mainUrl')">
-    <input type="text" id="mainUrl" class="status-box" placeholder="আপলোড হলে এখানে লিঙ্ক আসবে..." readonly>
+    <label>ছবি আপলোড:</label>
+    <input type="file" onchange="uploadImg(this)">
+    <input type="hidden" id="mainImg">
 
-    <label>গ্যালারি ছবি (সবগুলো অটো আপলোড হবে)</label>
-    <div class="grid">
-        <input type="file" onchange="uploadImg(this, 'g1')">
-        <input type="file" onchange="uploadImg(this, 'g2')">
-        <input type="file" onchange="uploadImg(this, 'g3')">
-        <input type="file" onchange="uploadImg(this, 'g4')">
-    </div>
-    <input type="hidden" id="g1"> <input type="hidden" id="g2"> <input type="hidden" id="g3"> <input type="hidden" id="g4">
-
-    <label>বর্ণনা (Bold/Italic/List)</label>
-    <div class="editor" id="desc" contenteditable="true"></div>
-
-    <button class="btn" id="publishBtn" onclick="publishPost()">পাবলিশ পোস্ট</button>
+    <div class="editor" id="desc" contenteditable="true" style="min-height: 100px; border: 1px solid #ccc;" placeholder="পণ্যের বর্ণনা..."></div>
+    
+    <button class="btn" onclick="sendToAppScript()">পাবলিশ করুন</button>
 </div>
 
 <script>
-    const IMGBB_KEY = '546dc91089a1748769faf7c52864a57d'; 
-    const CLIENT_ID = '918784071036-u63ihe5ihb5tc81t8ios82mfnk9f4hpa.apps.googleusercontent.com';
-    const MY_BLOG_ID = '4774611601336584177';
-    let accessToken = null;
+    // আপনার Apps Script-এর URL এখানে দিন
+    const SCRIPT_URL = 'আপনার_কপি_করা_লিঙ্ক_এখানে_দিন';
+    const IMGBB_KEY = '546dc91089a1748769faf7c52864a57d';
 
-    // ১. গুগল কানেক্ট করার ফাংশন
-    function authenticate() {
-        const redirectUri = window.location.href.split('#')[0];
-        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=https://www.googleapis.com/auth/blogger`;
-        window.location.href = authUrl;
-    }
-
-    // ২. পেজ লোড হলেই আইডি সেট এবং টোকেন রিসিভ করা
-    window.onload = () => {
-        document.getElementById('blogId').value = MY_BLOG_ID;
-        
-        const fragment = new URLSearchParams(window.location.hash.substring(1));
-        accessToken = fragment.get('access_token');
-
-        if (accessToken) {
-            const authBtn = document.getElementById('authBtn');
-            authBtn.innerText = "গুগল কানেক্টেড ✅";
-            authBtn.style.background = "#10b981";
-        }
-    };
-
-    // ৩. স্মার্ট ইমেজ আপলোড
-    async function uploadImg(input, targetId) {
-        if(!input.files[0]) return;
-        const mainField = document.getElementById('mainUrl');
-        mainField.value = "⏳ আপলোড হচ্ছে...";
-        mainField.style.color = "#2563eb";
-
-        const formData = new FormData();
-        formData.append('image', input.files[0]);
-        
-        try {
-            const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: 'POST', body: formData });
-            const data = await res.json();
-            if(data.success) {
-                if(document.getElementById(targetId)) document.getElementById(targetId).value = data.data.url;
-                mainField.value = "✅ ছবি রেডি!";
-                setTimeout(() => { mainField.value = data.data.url; }, 1500);
-            }
-        } catch (err) {
-            mainField.value = "❌ আপলোড ব্যর্থ!";
+    async function uploadImg(el) {
+        document.getElementById('status').innerText = "⏳ ছবি আপলোড হচ্ছে...";
+        const form = new FormData();
+        form.append('image', el.files[0]);
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: 'POST', body: form });
+        const data = await res.json();
+        if(data.success) {
+            document.getElementById('mainImg').value = data.data.url;
+            document.getElementById('status').innerText = "✅ ছবি আপলোড সফল!";
         }
     }
 
-    // ৪. পাবলিশ পোস্ট (এরর হ্যান্ডেলিং সহ)
-    async function publishPost() {
-        if(!accessToken) {
-            alert("আগে ১ নম্বর বাটনে ক্লিক করে গুগল কানেক্ট করুন!");
-            return;
-        }
-
+    async function sendToAppScript() {
         const title = document.getElementById('title').value;
-        const mainImg = document.getElementById('mainUrl').value;
-        const newPrice = document.getElementById('newP').value;
-        
-        if(!title || !mainImg || !newPrice) {
-            alert("দয়া করে প্রয়োজনীয় সব তথ্য পূরণ করুন!");
-            return;
-        }
+        const price = document.getElementById('price').value;
+        const img = document.getElementById('mainImg').value;
+        const desc = document.getElementById('desc').innerHTML;
 
-        let galHtml = '';
-        for(let i=1; i<=4; i++) {
-            let l = document.getElementById('g'+i).value;
-            if(l) galHtml += `<img src="${l}" style="width:70px; margin:5px; border-radius:5px; border:1px solid #ddd;">`;
-        }
+        if(!title || !img) return alert("তথ্য অসম্পূর্ণ!");
 
-        const content = `
-            <div style="border:1px solid #eee; padding:20px; border-radius:10px; font-family: sans-serif;">
-                <img src="${mainImg}" style="width:100%; border-radius:10px;">
-                <div style="margin-top:10px;">${galHtml}</div>
-                <h2>${title}</h2>
-                <p style="color:#2563eb; font-size:24px; font-weight:bold;">মূল্য: ${newPrice}৳</p>
-                <div>${document.getElementById('desc').innerHTML}</div>
-                <button style="background:#2563eb; color:#fff; padding:15px; border:none; border-radius:8px; font-size:18px; cursor:pointer; width:100%;">অর্ডার করুন</button>
-            </div>
-        `;
+        document.getElementById('status').innerText = "🚀 ব্লগে পাঠানো হচ্ছে...";
 
-        try {
-            const res = await fetch(`https://www.googleapis.com/blogger/v3/blogs/${MY_BLOG_ID}/posts/`, {
-                method: 'POST',
-                headers: { 
-                    'Authorization': `Bearer ${accessToken}`, 
-                    'Content-Type': 'application/json' 
-                },
-                body: JSON.stringify({ title: title, content: content })
-            });
-            
-            if(res.ok) {
-                alert("অভিনন্দন! সফলভাবে পোস্ট হয়েছে।");
-            } else {
-                const errorInfo = await res.json();
-                console.log(errorInfo);
-                alert("এরর: আপনার গুগল কানেকশন পুনরায় চেক করুন। প্রয়োজনে ১ নম্বর বাটনে আবার ক্লিক করুন।");
-            }
-        } catch (err) {
-            alert("নেটওয়ার্ক সমস্যা! আবার চেষ্টা করুন।");
-        }
+        const content = `<div style="text-align:center;"><img src="${img}" style="max-width:100%"><br><h2>${title}</h2><p>দাম: ${price}৳</p><div>${desc}</div><button>অর্ডার করুন</button></div>`;
+
+        fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors', // এটি গুরুত্বপূর্ণ
+            body: JSON.stringify({ title: title, price: price, content: content })
+        }).then(() => {
+            document.getElementById('status').innerText = "🎯 সফলভাবে ব্লগে পোস্ট এবং শিটে এন্ট্রি হয়েছে!";
+            alert("কাজ শেষ!");
+        }).catch(err => {
+            alert("কিছু একটা ভুল হয়েছে!");
+        });
     }
 </script>
 </body>
