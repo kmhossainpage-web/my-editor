@@ -67,14 +67,18 @@
         alert("আপলোড সফল!");
     }
 
-    async function publishPost() {
-        const blogId = document.getElementById('blogId').value = '4774611601336584177';
-        const mainImg = document.getElementById('mainUrl').value;
-        let gal = '';
-        for(let i=1; i<=4; i++) {
-            let l = document.getElementById('g'+i).value;
-            if(l) gal += `<img src="${l}" style="width:70px; margin:5px; border-radius:8px;">`;
-        }
+   async function publishPost() {
+    // আপনার ব্লগ আইডিটি এখানে স্থায়ীভাবে সেট করা হলো
+    const blogId = '4774611601336584177'; 
+    document.getElementById('blogId').value = blogId; 
+
+    const mainImg = document.getElementById('mainUrl').value;
+    let gal = '';
+    
+    for(let i=1; i<=4; i++) {
+        let l = document.getElementById('g'+i).value;
+        if(l) gal += `<img src="${l}" style="width:70px; margin:5px; border-radius:8px;">`;
+    }
 
         const content = `<div class="p-card"><img src="${mainImg}" style="width:100%"><div class="gal">${gal}</div><h2>${document.getElementById('title').value}</h2><p>${document.getElementById('newP').value}৳</p><div>${document.getElementById('desc').innerHTML}</div><button onclick="openForm()">অর্ডার করুন</button></div>`;
 
@@ -89,3 +93,4 @@
 </body>
 
 </html>
+
